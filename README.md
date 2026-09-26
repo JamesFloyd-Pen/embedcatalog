@@ -19,7 +19,7 @@
 
 ## Table of contents
 
-- [About](#about)
+- [Idea](#idea)
 - [Features](#features)
   - [Catalog & discovery](#catalog--discovery)
   - [Embeds](#embeds)
@@ -42,17 +42,15 @@
 - [Contributing](#contributing)
 - [License](#license)
 
-## About
+## Idea
 
-While developing open source projects, I kept wanting a way to highlight them without reaching for the same default badges everyone else uses. So I built a catalog where each project gets a relatively unique embed instead of a copy-paste one.
-
-Submit your project, get listed, and drop a badge into your README or website. Everything else — the badge images, the project page, the stats — is handled by the platform.
+While developing open source projects, one day I came up with the idea of ​​making a website for practical pictures for projects, since I wanted to somehow highlight my project rather than adding default ones. I don't want to copy others, so I made a catalog where each project will have a relatively unique embed.
 
 ## Features
 
 ### Catalog & discovery
 
-The homepage lists every published project as a card with its cover image, description, and tags. Visitors can:
+On the main page, each published project is presented as a card featuring relevant images and project information. The platform also tracks views and upvotes, which are displayed on the card as well. Visitors can:
 
 - Search by name, description, or tag
 - Filter by status (`New`, added within the last 14 days) or `Premium`
@@ -71,7 +69,11 @@ Each project gets ready-made embed badges, generated as static images and availa
 
 ### Custom embeds
 
-Beyond the built-in badges, every project can design its own custom embed card (title, description, light/dark theme) straight from the account dashboard, and copy the ready HTML snippet for a README or website.
+Beyond the built-in badges, every project can design its own custom embed (title, description, light/dark theme) straight from the account dashboard, and copy the ready HTML snippet for a README or website.
+
+Example:
+
+[![is-kit](https://embedcatalog.com/embed/is-kit/5037b265.png)](https://embedcatalog.com/projects/is-kit)
 
 ### Project pages
 
@@ -79,13 +81,13 @@ Every project gets its own page with:
 
 - An image carousel for screenshots
 - Live GitHub stats (stars, forks, contributors, license) refreshed automatically
-- Tags and social links (X, YouTube, GitHub)
-- A Markdown-powered "info" section — tables, task lists, code blocks with one-click copy, links, and images (including shields.io badges) all render through the same GitHub-flavored Markdown pipeline
+- Tags and social links (𝕏 (Twitter), YouTube, GitHub)
+- A Markdown-powered "info" section — tables, task lists, etc. All render through the same GitHub-flavored Markdown pipeline
 - A generated Open Graph image for clean link previews when the project is shared
 
 ### Upvotes & impressions
 
-Signed-in users can upvote a project once and remove their vote later — no downvotes, just a simple signal of interest. Page views are also tracked as impressions, batched client-side to keep the write volume low, and both numbers are shown on the project card and its page.
+Signed-in users can upvote a project once. Page views are also tracked as impressions, batched client-side to keep the write volume low, and both numbers are shown on the project card and its page.
 
 ### Moderation
 
@@ -93,8 +95,8 @@ New submissions land in a moderation queue. Admins can approve, reject, mark a p
 
 ## How it works
 
-1. Create an account and submit your project — title, tags, short description, and URL.
-2. Optionally add screenshots, social links, and one or more embed variations.
+1. Create an account and fill info about your project.
+2. Optionally add social links, and one or more embed variations.
 3. Send it for review from your account, with an optional note for the moderators.
 4. Once approved, your project is published, gets its own page, and its embeds become available to copy.
 5. Keep an eye on impressions and upvotes as more people discover it.
@@ -112,9 +114,9 @@ Commercial projects are also taken into work.
 
 ## Premium
 
-The platform isn't focused on building an audience for its own sake — it's about steadily growing a project's visibility over time. Each month, a limited number of premium projects are accepted, and the team features them in relevant articles and content on other platforms (X posts, etc).
+Essentially, we are not focused on creating an audience on the platform, although this is also important. The idea is to work on a project periodically, like an ant working on its visibility. The platform accepts a certain number of premium projects per month, and the project team will simply add them to relevant articles and create content about them on other platforms. For example, tweets, etc.
 
-This keeps the workflow sustainable: as new months come in, there's still room to keep working on projects from previous months.
+This flow allows us to work on projects as efficiently as possible. Also, if we move on to the next month, the number of projects will allow us to work on previous months' projects.
 
 ## FAQ
 
@@ -125,7 +127,7 @@ Yes. Free listings get a project page, the base embed badges, and a custom embed
 It goes into a moderation queue as a draft. An admin reviews it and either publishes, rejects, or asks for changes before it's shown in the catalog.
 
 **Can I edit a project after it's published?**
-Yes, from your account you can update details, images, embeds, and the Markdown info section at any time.
+Yes, from your account you can update details, images, embeds, and the Markdown info section at any time (in development).
 
 ## Tech stack
 
@@ -141,11 +143,11 @@ Yes, from your account you can update details, images, embeds, and the Markdown 
 ## Project structure
 
 ```
-app/            Routes (App Router): catalog, project pages, account, submit, embeds
-components/     Shared UI and feature components (cards, forms, embeds, markdown, etc.)
-lib/            Supabase clients, data mappers, and small utilities
-scripts/        Build-time embed image generation and the GitHub stats sync job
-public/         Static assets, including the site logo and preview image
+app            Routes (App Router): catalog, project pages, account, submit, embeds
+components     Shared UI and feature components (cards, forms, embeds, markdown, etc.)
+lib            Supabase clients, data mappers, and small utilities
+scripts        Build-time embed image generation and the GitHub stats sync job
+public         Static assets, including the site logo and preview image
 ```
 
 ## Running locally
@@ -207,8 +209,8 @@ The platform is open to your ideas and code! Thanks to everyone who helps make i
 
 ## License
 
-Source code released under the AGPL-3.0 license. The application code is completely open source.
+Source code released under the AGPL-3.0 license.
 
 ---
 
-<div align="center">Made with 🌱 by <a href="https://x.com/aanthonymax">Anthony Max</a></div>
+<div align="center">The application code is completely open source 🌱!</div>
