@@ -8,7 +8,7 @@
   </div>
   <br/>
   <p>
-    <a href="https://github.com/EmbedCatalog/embedcatalog/blob/main/LICENSE"><img height="20" src="https://embedcatalog.com/embed/hmpl/license.png" alt="license" /></a>
+    <a href="https://github.com/EmbedCatalog/embedcatalog/blob/main/LICENSE"><img height="20" src="https://embedcatalog.com/embed/videorc/license.png" alt="license" /></a>
     <a href="https://embedcatalog.com"><img height="20" src="https://embedcatalog.com/embed/hmpl/added.theme-dark.png" alt="embedcatalog" /></a>
     <a href="https://x.com/aanthonymax"><img height="20" src="https://img.shields.io/badge/twitter-000?logo=x&logoColor=fff" alt="x.com" /></a>
   </p>
