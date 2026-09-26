@@ -231,8 +231,11 @@ The platform is open to your ideas and code! Thanks to everyone who helps make i
 
 ## License
 
-Source code released under the AGPL-3.0 license.
+Source code released under the [AGPL-3.0 license](https://github.com/embedcatalog/embedcatalog/blob/main/LICENSE).
 
 ---
-
-<div align="center">The application code is completely open source 🌱!</div>
+<div align="center">
+  <i>The application code is completely open source 🌱!</i>
+  
+  <b>💎 <a href="https://github.com/embedcatalog/embedcatalog">Star this repo</b>
+</div>
