@@ -96,6 +96,8 @@ New submissions land in a moderation queue. Admins can approve, reject, mark a p
 
 ## How it works
 
+![EmbedCatalog create project](public/images/photo3.gif)
+
 1. Create an account and fill info about your project.
 2. Optionally add social links, and one or more embed variations.
 3. Send it for review from your account, with an optional note for the moderators.
