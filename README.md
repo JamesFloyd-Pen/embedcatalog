@@ -237,5 +237,5 @@ Source code released under the [AGPL-3.0 license](https://github.com/embedcatalo
 <div align="center">
   <i>The application code is completely open source 🌱!</i>
   
-  <b>💎 <a href="https://github.com/embedcatalog/embedcatalog">Star this repo</b>
+  <b>☆ <a href="https://github.com/embedcatalog/embedcatalog">Star this repo</b>
 </div>
