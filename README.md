@@ -38,8 +38,9 @@
   - [Quick start](#quick-start)
   - [Environment variables](#environment-variables)
   - [Available scripts](#available-scripts)
-- [Automation](#automation)
+- [Data Synchronization](#data-synchronization)
 - [Contributing](#contributing)
+- [Star History](#star-history)
 - [License](#license)
 
 ## Idea
@@ -145,7 +146,7 @@ Yes, from your account you can update details, images, embeds, and the Markdown 
 ```
 app            Routes (App Router): catalog, project pages, account, submit, embeds
 components     Shared UI and feature components (cards, forms, embeds, markdown, etc.)
-lib            Supabase clients, data mappers, and small utilities
+lib            Supabase clients, data mappers, and utilities
 scripts        Build-time embed image generation and the GitHub stats sync job
 public         Static assets, including the site logo and preview image
 ```
@@ -199,13 +200,25 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 | `npm run format`    | Formats the codebase with Prettier                  |
 | `npm run typecheck` | Runs the TypeScript compiler in `--noEmit` mode     |
 
-## Automation
+## Data Synchronization
 
 A scheduled GitHub Action runs `scripts/sync-github-stats.ts` daily to refresh each project's stars, forks, contributors, and license straight from the GitHub API, so project pages stay up to date without manual work.
 
 ## Contributing
 
+We have a [Contributing Guide](https://github.com/embedcatalog/embedcatalog/blob/main/CONTRIBUTING.md) that describes the main steps for contributing to the project.
+
 The platform is open to your ideas and code! Thanks to everyone who helps make it better.
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=embedcatalog%2Fembedcatalog&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=embedcatalog/embedcatalog&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=embedcatalog/embedcatalog&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=embedcatalog/embedcatalog&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## License
 
