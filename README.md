@@ -4,7 +4,7 @@
 
   <h1>EmbedCatalog</h1>
   <div align="center">
-  <a href="https://embedcatalog.com">🌐 Website</a> • <a href="https://embedcatalog.com/account/create-project">💎 Create project</a> • <a href="https://embedcatalog.com/about">📄 About</a> • <a href="https://hmpl-lang.dev/examples">⚙️ Submit project</a>
+  <a href="https://embedcatalog.com">🌐 Website</a> • <a href="https://embedcatalog.com/account/create-project">💎 Create project</a> • <a href="https://embedcatalog.com/about">📄 About</a> • <a href="https://embedcatalog.com/submit">⚙️ Submit project</a>
   </div>
   <br/>
   <p>
