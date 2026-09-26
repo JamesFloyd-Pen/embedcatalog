@@ -121,14 +121,21 @@ This flow allows us to work on projects as efficiently as possible. Also, if we 
 
 ## FAQ
 
-**Is listing a project free?**
-Yes. Free listings get a project page, the base embed badges, and a custom embed you design yourself. Premium is optional and adds promotion and extra embeds.
+<details>
+<summary><b>Is listing a project free?</b></summary>
+  Yes. Free listings get a project page, the base embed badges, and a custom embed you design yourself. Premium is optional and adds promotion and extra embeds.
+</details>
 
-**What happens after I submit a project?**
-It goes into a moderation queue as a draft. An admin reviews it and either publishes, rejects, or asks for changes before it's shown in the catalog.
+<details>
+<summary><b>What happens after I submit a project?</b></summary>
+  It goes into a moderation queue as a draft. An admin reviews it and either publishes, rejects, or asks for changes before it's shown in the catalog.
+</details>
 
-**Can I edit a project after it's published?**
-Yes, from your account you can update details, images, embeds, and the Markdown info section at any time (in development).
+<details>
+<summary><b>Can I edit a project after it's published?</b></summary>
+  Yes, from your account you can update details, images, embeds, and the Markdown info section at any time (in development).
+</details>
+
 
 ## Tech stack
 
