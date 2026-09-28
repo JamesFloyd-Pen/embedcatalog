@@ -1,6 +1,6 @@
 <div align="center">
 
-  [![EmbedCatalog](public/images/photo1.png)](https://embedcatalog.com)
+[![EmbedCatalog](public/images/photo1.png)](https://embedcatalog.com)
 
   <h1>EmbedCatalog</h1>
   <div align="center">
@@ -138,7 +138,6 @@ This flow allows us to work on projects as efficiently as possible. Also, if we 
   Yes, from your account you can update details, images, embeds, and the Markdown info section at any time (in development).
 </details>
 
-
 ## Tech stack
 
 | Layer     | Stack                                       |
@@ -164,11 +163,11 @@ public         Static assets, including the site logo and preview image
 
 ### Prerequisites
 
-| Requirement      | Version                                                                    |
-| ---------------- | -------------------------------------------------------------------------- |
-| Node.js          | 20+                                                                        |
-| npm              | 10+                                                                        |
-| Supabase project | with the `projects`, `project_embeds`, and `project_upvotes` tables set up |
+| Requirement      | Version                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| Node.js          | 20+                                                                                             |
+| npm              | 10+                                                                                             |
+| Supabase project | with the `projects`, `project_embeds`, `project_upvotes`, and `project_bookmarks` tables set up |
 
 ### Quick start
 
@@ -234,8 +233,9 @@ The platform is open to your ideas and code! Thanks to everyone who helps make i
 Source code released under the [AGPL-3.0 license](https://github.com/embedcatalog/embedcatalog/blob/main/LICENSE).
 
 ---
+
 <div align="center">
   <i>The application code is completely open source 🌱!</i>
-  
-  <b>☆ <a href="https://github.com/embedcatalog/embedcatalog">Star this repo</b>
+
+<b>☆ <a href="https://github.com/embedcatalog/embedcatalog">Star this repo</b>
 </div>

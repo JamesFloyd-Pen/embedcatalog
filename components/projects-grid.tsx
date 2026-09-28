@@ -3,8 +3,10 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowUp, Eye } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowUp, Bookmark, Eye, LoaderCircle } from "lucide-react"
 
+import { useAuth } from "components/auth-provider"
 import { Embed } from "components/ui/embed"
 import {
   Card,
@@ -16,6 +18,7 @@ import {
   CardTitle,
 } from "components/ui/card"
 import { ProjectCardStars } from "components/project-card-stars"
+import { supabase } from "lib/supabase/client"
 import { formatDate } from "lib/utils"
 
 function TwitterIcon(props: React.ComponentProps<"svg">) {
@@ -82,6 +85,89 @@ function ProjectsGrid({
   projects: Project[]
   onTagClick?: (tag: string) => void
 }) {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+  const [loadedBookmarks, setLoadedBookmarks] = React.useState<{
+    userId: string
+    ids: Set<string>
+  } | null>(null)
+  const [pendingIds, setPendingIds] = React.useState<Set<string>>(
+    () => new Set()
+  )
+  const [bookmarkError, setBookmarkError] = React.useState(false)
+  const bookmarksAreLoading = Boolean(
+    user && loadedBookmarks?.userId !== user.id
+  )
+
+  React.useEffect(() => {
+    if (!user) return
+
+    let cancelled = false
+
+    supabase
+      .from("project_bookmarks")
+      .select("project_id")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (cancelled) return
+        setLoadedBookmarks({
+          userId: user.id,
+          ids: new Set((data ?? []).map(({ project_id }) => project_id)),
+        })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  async function toggleBookmark(projectId: string) {
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    if (bookmarksAreLoading || pendingIds.has(projectId)) return
+
+    const isBookmarked = loadedBookmarks?.ids.has(projectId) ?? false
+    setPendingIds((current) => new Set(current).add(projectId))
+    setBookmarkError(false)
+
+    const result = isBookmarked
+      ? await supabase
+          .from("project_bookmarks")
+          .delete()
+          .eq("project_id", projectId)
+          .eq("user_id", user.id)
+      : await supabase
+          .from("project_bookmarks")
+          .insert({ project_id: projectId, user_id: user.id })
+
+    if (result.error) {
+      setBookmarkError(true)
+    } else {
+      setLoadedBookmarks((current) => {
+        if (!current || current.userId !== user.id) return current
+        const next = new Set(current.ids)
+        if (isBookmarked) next.delete(projectId)
+        else next.add(projectId)
+        return { ...current, ids: next }
+      })
+    }
+    setPendingIds((current) => {
+      const next = new Set(current)
+      next.delete(projectId)
+      return next
+    })
+  }
+
+  function isBookmarked(projectId: string) {
+    return Boolean(
+      user &&
+      loadedBookmarks?.userId === user.id &&
+      loadedBookmarks.ids.has(projectId)
+    )
+  }
+
   if (projects.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
@@ -91,128 +177,164 @@ function ProjectsGrid({
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,24rem),1fr))] gap-4">
-      {projects.map((project) => (
-        <Card
-          key={project.id}
-          className="relative h-full overflow-hidden transition-colors hover:border-foreground/20"
-        >
-          <Link
-            href={`/projects/${project.slug}`}
-            aria-label={project.name}
-            className="absolute inset-0 z-0 rounded-xl"
-          />
+    <div>
+      {bookmarkError && (
+        <p className="mb-3 text-sm text-destructive" role="alert">
+          Could not update your bookmarks. Please try again.
+        </p>
+      )}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,24rem),1fr))] gap-4">
+        {projects.map((project) => (
+          <Card
+            key={project.id}
+            className="relative mx-auto h-full w-full max-w-2xl overflow-hidden transition-colors hover:border-foreground/20"
+          >
+            <Link
+              href={`/projects/${project.slug}`}
+              aria-label={project.name}
+              className="absolute inset-0 z-0 rounded-xl"
+            />
 
-          {project.images[0] && (
-            <div className="pointer-events-none relative -mt-6 aspect-video w-full overflow-hidden border-b bg-muted select-none">
-              <Image
-                src={project.images[0]}
-                alt={project.name}
-                fill
-                unoptimized
-                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-          )}
-
-          <CardHeader>
-            <CardTitle className="flex flex-col items-start gap-2">
-              {(project.premium || project.isNew) && (
-                <div className="mb-1 flex items-center gap-2">
-                  {project.premium && (
-                    <Embed variant="secondary">Premium</Embed>
-                  )}
-                  {project.isNew && <Embed>New</Embed>}
-                </div>
-              )}
-              <span>{project.name}</span>
-            </CardTitle>
-            <CardDescription>{project.description}</CardDescription>
-            <CardAction className="relative z-10 flex items-center gap-2">
-              <a
-                href={project.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label={`Link to ${project.name}`}
-                className="flex h-8 items-center rounded-md border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Visit
-              </a>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            <div className="relative z-10 flex w-fit flex-wrap gap-1">
-              {project.tags.map((tag) => (
-                <Embed
-                  key={tag}
-                  variant="outline"
-                  className={onTagClick ? "cursor-pointer" : undefined}
-                  onClick={onTagClick ? () => onTagClick(tag) : undefined}
-                >
-                  {tag}
-                </Embed>
-              ))}
-            </div>
-          </CardContent>
-          <CardFooter className="mt-auto justify-between text-xs text-muted-foreground">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="whitespace-nowrap">
-                {formatDate(project.createdAt)}
-              </span>
-              <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                <Eye className="size-3.5" />
-                {project.impressionsCount.toLocaleString("en-US")}
-              </span>
-              <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                <ArrowUp className="size-3.5" />
-                {project.upvotesCount.toLocaleString("en-US")}
-              </span>
-            </div>
-            <div className="relative z-10 flex items-center gap-0.5">
-              {project.githubUrl && (
-                <ProjectCardStars
-                  githubUrl={project.githubUrl}
-                  stars={project.githubStats?.stars}
+            {project.images[0] && (
+              <div className="pointer-events-none relative -mt-6 aspect-video w-full overflow-hidden border-b bg-muted select-none">
+                <Image
+                  src={project.images[0]}
+                  alt={project.name}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover"
                 />
-              )}
-              {project.socials?.twitter && (
+              </div>
+            )}
+
+            <CardHeader>
+              <CardTitle className="flex flex-col items-start gap-2">
+                {(project.premium || project.isNew) && (
+                  <div className="mb-1 flex items-center gap-2">
+                    {project.premium && (
+                      <Embed variant="secondary">Premium</Embed>
+                    )}
+                    {project.isNew && <Embed>New</Embed>}
+                  </div>
+                )}
+                <span>{project.name}</span>
+              </CardTitle>
+              <CardDescription>{project.description}</CardDescription>
+              <CardAction className="relative z-10 flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label={
+                    isBookmarked(project.id)
+                      ? `Remove ${project.name} from bookmarks`
+                      : user
+                        ? `Add ${project.name} to bookmarks`
+                        : `Sign in to bookmark ${project.name}`
+                  }
+                  aria-pressed={isBookmarked(project.id)}
+                  title={user ? undefined : "Sign in to bookmark"}
+                  disabled={
+                    authLoading ||
+                    (Boolean(user) &&
+                      (bookmarksAreLoading || pendingIds.has(project.id)))
+                  }
+                  onClick={() => void toggleBookmark(project.id)}
+                  className="flex size-8 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                >
+                  {pendingIds.has(project.id) ||
+                  (user && bookmarksAreLoading) ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <Bookmark
+                      className="size-4"
+                      fill={isBookmarked(project.id) ? "currentColor" : "none"}
+                    />
+                  )}
+                </button>
                 <a
-                  href={project.socials.twitter}
+                  href={project.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  aria-label={`${project.name} on X`}
-                  className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
+                  aria-label={`Link to ${project.name}`}
+                  className="flex h-8 items-center rounded-md border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 >
-                  <TwitterIcon className="size-4" />
+                  Visit
                 </a>
-              )}
-              {project.socials?.youtube && (
-                <a
-                  href={project.socials.youtube}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={`${project.name} on YouTube`}
-                  className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  <YoutubeIcon className="size-4" />
-                </a>
-              )}
-              {project.socials?.github && (
-                <a
-                  href={project.socials.github}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={`${project.name} on GitHub`}
-                  className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  <GithubIcon className="size-4" />
-                </a>
-              )}
-            </div>
-          </CardFooter>
-        </Card>
-      ))}
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <div className="relative z-10 flex w-fit flex-wrap gap-1">
+                {project.tags.map((tag) => (
+                  <Embed
+                    key={tag}
+                    variant="outline"
+                    className={onTagClick ? "cursor-pointer" : undefined}
+                    onClick={onTagClick ? () => onTagClick(tag) : undefined}
+                  >
+                    {tag}
+                  </Embed>
+                ))}
+              </div>
+            </CardContent>
+            <CardFooter className="mt-auto justify-between text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="whitespace-nowrap">
+                  {formatDate(project.createdAt)}
+                </span>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Eye className="size-3.5" />
+                  {project.impressionsCount.toLocaleString("en-US")}
+                </span>
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <ArrowUp className="size-3.5" />
+                  {project.upvotesCount.toLocaleString("en-US")}
+                </span>
+              </div>
+              <div className="relative z-10 flex items-center gap-0.5">
+                {project.githubUrl && (
+                  <ProjectCardStars
+                    githubUrl={project.githubUrl}
+                    stars={project.githubStats?.stars}
+                  />
+                )}
+                {project.socials?.twitter && (
+                  <a
+                    href={project.socials.twitter}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={`${project.name} on X`}
+                    className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <TwitterIcon className="size-4" />
+                  </a>
+                )}
+                {project.socials?.youtube && (
+                  <a
+                    href={project.socials.youtube}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={`${project.name} on YouTube`}
+                    className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <YoutubeIcon className="size-4" />
+                  </a>
+                )}
+                {project.socials?.github && (
+                  <a
+                    href={project.socials.github}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    aria-label={`${project.name} on GitHub`}
+                    className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <GithubIcon className="size-4" />
+                  </a>
+                )}
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

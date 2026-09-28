@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
+  Bookmark,
   FolderKanban,
   Loader2,
   LogOut,
@@ -22,9 +23,14 @@ import {
   CardTitle,
 } from "components/ui/card"
 import { useAuth } from "components/auth-provider"
+import {
+  ProjectsGrid,
+  type Project as CatalogProject,
+} from "components/projects-grid"
 import { supabase } from "lib/supabase/client"
+import { getProjectImageUrl } from "lib/storage"
 
-type Project = {
+type OwnedProject = {
   id: string
   name: string
   description: string
@@ -38,16 +44,23 @@ type Project = {
 function AccountPage({
   initialSection = "settings",
 }: {
-  initialSection?: "settings" | "projects"
+  initialSection?: "settings" | "projects" | "bookmarks"
 }) {
   const router = useRouter()
   const { user, loading, isAdmin, signOut } = useAuth()
   const [activeSection, setActiveSection] = React.useState<
-    "settings" | "projects"
+    "settings" | "projects" | "bookmarks"
   >(initialSection)
-  const [projects, setProjects] = React.useState<Project[]>([])
+  const [projects, setProjects] = React.useState<OwnedProject[]>([])
   const [projectsLoading, setProjectsLoading] = React.useState(false)
   const [projectsError, setProjectsError] = React.useState<string | null>(null)
+  const [bookmarkedProjects, setBookmarkedProjects] = React.useState<
+    CatalogProject[]
+  >([])
+  const [bookmarksLoading, setBookmarksLoading] = React.useState(false)
+  const [bookmarksError, setBookmarksError] = React.useState<string | null>(
+    null
+  )
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -87,10 +100,94 @@ function AccountPage({
     }
   }, [activeSection, user])
 
+  React.useEffect(() => {
+    if (!user || activeSection !== "bookmarks") return
+
+    let cancelled = false
+    const userId = user.id
+
+    async function loadBookmarks() {
+      const { data: bookmarkRows, error: bookmarkError } = await supabase
+        .from("project_bookmarks")
+        .select("project_id")
+        .eq("user_id", userId)
+
+      if (cancelled) return
+      if (bookmarkError) {
+        setBookmarksError(bookmarkError.message)
+        setBookmarkedProjects([])
+        setBookmarksLoading(false)
+        return
+      }
+
+      const projectIds = (bookmarkRows ?? []).map(
+        ({ project_id }) => project_id
+      )
+      if (projectIds.length === 0) {
+        setBookmarkedProjects([])
+        setBookmarksLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from("projects")
+        .select(
+          "id, slug, name, description, url, github_url, github_stars, github_forks, github_contributors, github_license, github_stats_updated_at, images, tags, socials, is_premium, impressions_count, upvotes_count, created_at"
+        )
+        .in("id", projectIds)
+        .eq("status", "published")
+
+      if (cancelled) return
+      if (error) {
+        setBookmarksError(error.message)
+        setBookmarkedProjects([])
+      } else {
+        setBookmarkedProjects(
+          data.map((project) => ({
+            id: project.id,
+            slug: project.slug,
+            name: project.name,
+            description: project.description,
+            isNew: false,
+            premium: project.is_premium,
+            url: project.url,
+            githubUrl: project.github_url ?? project.socials?.github,
+            githubStats: {
+              stars: project.github_stars,
+              forks: project.github_forks,
+              contributors: project.github_contributors,
+              license: project.github_license,
+              updatedAt: project.github_stats_updated_at,
+            },
+            images: (project.images ?? []).map(getProjectImageUrl),
+            tags: project.tags ?? [],
+            createdAt: project.created_at,
+            impressionsCount: project.impressions_count,
+            upvotesCount: project.upvotes_count,
+            socials: project.socials ?? undefined,
+          }))
+        )
+      }
+      setBookmarksLoading(false)
+    }
+
+    void loadBookmarks()
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeSection, user])
+
   function showProjects() {
     setProjectsLoading(true)
     setProjectsError(null)
     setActiveSection("projects")
+  }
+
+  function showBookmarks() {
+    setBookmarksLoading(true)
+    setBookmarksError(null)
+    setActiveSection("bookmarks")
   }
 
   if (loading || !user) {
@@ -141,6 +238,14 @@ function AccountPage({
             >
               <FolderKanban className="size-4" />
               My projects
+            </Button>
+            <Button
+              variant={activeSection === "bookmarks" ? "secondary" : "ghost"}
+              className="flex-1 justify-start md:flex-none"
+              onClick={showBookmarks}
+            >
+              <Bookmark className="size-4" />
+              Bookmarks
             </Button>
             {isAdmin && (
               <Button
@@ -199,7 +304,7 @@ function AccountPage({
                 </div>
               </CardContent>
             </Card>
-          ) : (
+          ) : activeSection === "projects" ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">My projects</CardTitle>
@@ -263,6 +368,31 @@ function AccountPage({
                 )}
               </CardContent>
             </Card>
+          ) : (
+            <section className="flex flex-col gap-4">
+              <div>
+                <h1 className="text-xl font-semibold">Bookmarks</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Projects you have saved.
+                </p>
+              </div>
+              {bookmarksLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading bookmarks
+                </div>
+              ) : bookmarksError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  Could not load bookmarks: {bookmarksError}
+                </p>
+              ) : bookmarkedProjects.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No bookmarked projects yet.
+                </p>
+              ) : (
+                <ProjectsGrid projects={bookmarkedProjects} />
+              )}
+            </section>
           )}
         </main>
       </div>

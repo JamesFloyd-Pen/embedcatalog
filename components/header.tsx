@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  Bookmark,
   FolderKanban,
   Plus,
   Settings,
@@ -139,6 +140,15 @@ function Header({ githubSlot }: { githubSlot?: React.ReactNode }) {
                         >
                           <FolderKanban className="size-4" />
                           My projects
+                        </Link>
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          href="/account/bookmarks"
+                          className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent focus:bg-accent"
+                        >
+                          <Bookmark className="size-4" />
+                          Bookmarks
                         </Link>
                       </DropdownMenu.Item>
                       {isAdmin && (

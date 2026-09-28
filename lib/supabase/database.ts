@@ -57,6 +57,20 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      project_bookmarks: {
+        Row: {
+          project_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          project_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: never
+        Relationships: []
+      }
       projects: {
         Row: {
           id: string
