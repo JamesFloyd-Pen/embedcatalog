@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, Loader2, Plus, Trash2, X } from "lucide-react"
 
 import { useAuth } from "components/auth-provider"
+import { useNotification } from "components/notification-provider"
 import { Button } from "components/ui/button"
 import {
   Card,
@@ -39,6 +40,7 @@ function EditProjectForm() {
   const searchParams = useSearchParams()
   const projectId = searchParams.get("id")
   const { user, loading, isAdmin } = useAuth()
+  const { notify } = useNotification()
   const [title, setTitle] = React.useState("")
   const [projectUrl, setProjectUrl] = React.useState("")
   const [shortDescription, setShortDescription] = React.useState("")
@@ -57,6 +59,7 @@ function EditProjectForm() {
   const [status, setStatus] = React.useState<
     "draft" | "pending" | "published" | "rejected" | null
   >(null)
+  const [hasPendingChanges, setHasPendingChanges] = React.useState(false)
 
   React.useEffect(() => {
     if (!loading && !user) router.replace("/login")
@@ -95,6 +98,16 @@ function EditProjectForm() {
         return
       }
 
+      const { data: pendingEdit } = await supabase
+        .from("project_edit_requests")
+        .select("id")
+        .eq("project_id", project.id)
+        .eq("status", "pending")
+        .maybeSingle()
+
+      if (cancelled) return
+
+      setHasPendingChanges(Boolean(pendingEdit))
       setStatus(project.status)
       setTitle(project.name)
       setShortDescription(project.description)
@@ -154,31 +167,13 @@ function EditProjectForm() {
     return (
       <main className="site-container py-8 sm:py-12">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/account">
+          <Link href="/account/projects">
             <ChevronLeft className="size-4" />
-            Account
+            My projects
           </Link>
         </Button>
         <p className="mt-6 text-sm text-destructive" role="alert">
           {fetchError}
-        </p>
-      </main>
-    )
-  }
-
-  if (status === "pending" && !isAdmin) {
-    return (
-      <main className="site-container py-8 sm:py-12">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/account">
-            <ChevronLeft className="size-4" />
-            Account
-          </Link>
-        </Button>
-        <h1 className="mt-4 text-2xl font-semibold">Edit project</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This project was submitted for moderation and can&rsquo;t be edited
-          until it&rsquo;s reviewed.
         </p>
       </main>
     )
@@ -240,6 +235,43 @@ function EditProjectForm() {
       uploadedImages.push(data.publicUrl)
     }
 
+    const nextImages = [...images, ...uploadedImages]
+    const embedPayload = embeds.map((embed, position) => ({
+      title: embed.title.trim() || name,
+      description: embed.description.trim(),
+      position,
+      ...(embed.shortId ? { short_id: embed.shortId } : {}),
+    }))
+
+    if (status === "published" && !isAdmin) {
+      const { error: requestError } = await supabase
+        .from("project_edit_requests")
+        .insert({
+          project_id: projectId as string,
+          owner_id: user!.id,
+          name,
+          description,
+          url,
+          github_url: socials.github ?? null,
+          tags: tags.length ? tags : null,
+          socials: Object.keys(socials).length ? socials : null,
+          images: nextImages.length ? nextImages : null,
+          info: infoInput.trim() || null,
+          embeds: embedPayload,
+        })
+
+      setSaving(false)
+
+      if (requestError) {
+        setSaveError(requestError.message)
+        return
+      }
+
+      notify("Changes sent for moderation.")
+      router.push("/account/projects")
+      return
+    }
+
     const { error: projectError } = await supabase
       .from("projects")
       .update({
@@ -249,9 +281,7 @@ function EditProjectForm() {
         github_url: socials.github ?? null,
         tags: tags.length ? tags : null,
         socials: Object.keys(socials).length ? socials : null,
-        images: [...images, ...uploadedImages].length
-          ? [...images, ...uploadedImages]
-          : null,
+        images: nextImages.length ? nextImages : null,
         info: infoInput.trim() || null,
       })
       .eq("id", projectId as string)
@@ -280,14 +310,9 @@ function EditProjectForm() {
     }
 
     const { error: embedsError } = await supabase.from("project_embeds").insert(
-      embeds.map((embed, position) => ({
+      embedPayload.map((embed) => ({
+        ...embed,
         project_id: projectId as string,
-        title: embed.title.trim() || name,
-        description: embed.description.trim(),
-        position,
-        // preserve the existing short_id (and its generated PNGs); the DB
-        // assigns a new one only for embeds that haven't been saved before
-        ...(embed.shortId ? { short_id: embed.shortId } : {}),
       }))
     )
 
@@ -300,142 +325,150 @@ function EditProjectForm() {
       return
     }
 
-    router.push("/account")
+    notify("Project updated successfully.")
+    router.push("/account/projects")
   }
+
+  const editingLocked = (status === "pending" || hasPendingChanges) && !isAdmin
 
   return (
     <main className="site-container py-8 sm:py-12">
       <div className="mb-8">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/account">
+          <Link href="/account/projects">
             <ChevronLeft className="size-4" />
-            Account
+            My projects
           </Link>
         </Button>
         <h1 className="mt-4 text-2xl font-semibold">Edit project</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Update project details and embeds.
+          {editingLocked
+            ? "This project has changes pending moderation and cannot be edited until they are reviewed."
+            : "Update project details and embeds."}
         </p>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Project details</CardTitle>
-              <CardDescription>
-                These details are used by every embed below.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-5">
-              <div className="grid gap-2">
-                <Label htmlFor="project-title">Title</Label>
-                <Input
-                  id="project-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="My project"
-                  maxLength={80}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-tags">Tags</Label>
-                <Input
-                  id="project-tags"
-                  value={tagsInput}
-                  onChange={(event) => setTagsInput(event.target.value)}
-                  placeholder="design, AI"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Comma-separated list of tags.
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-short-description">
-                  Short description
-                </Label>
-                <Textarea
-                  id="project-short-description"
-                  value={shortDescription}
-                  onChange={(event) => setShortDescription(event.target.value)}
-                  placeholder="A short summary of what it does."
-                  maxLength={240}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-url">URL</Label>
-                <Input
-                  id="project-url"
-                  type="url"
-                  value={projectUrl}
-                  onChange={(event) => setProjectUrl(event.target.value)}
-                  placeholder="https://example.com/my-project"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {isAdmin && (
+      <fieldset disabled={editingLocked} className="min-w-0 border-0 p-0">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="flex flex-col gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Images</CardTitle>
+                <CardTitle className="text-lg">Project details</CardTitle>
                 <CardDescription>
-                  Upload images for the project gallery. Changes are applied
-                  when you save the project.
+                  These details are used by every embed below.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4">
-                {images.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {images.map((image) => (
-                      <div
-                        key={image}
-                        className="group relative aspect-video overflow-hidden rounded-md border bg-muted"
-                      >
-                        <Image
-                          src={image}
-                          alt="Project gallery image"
-                          fill
-                          unoptimized
-                          sizes="(min-width: 640px) 33vw, 50vw"
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          aria-label="Remove image"
-                          onClick={() =>
-                            setImages((current) =>
-                              current.filter((item) => item !== image)
-                            )
-                          }
-                          className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border bg-background/90 opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Label htmlFor="project-image-files">Upload images</Label>
-                <Input
-                  id="project-image-files"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(event) =>
-                    setImageFiles(Array.from(event.target.files ?? []))
-                  }
-                />
-                {imageFiles.length > 0 && (
+              <CardContent className="grid gap-5">
+                <div className="grid gap-2">
+                  <Label htmlFor="project-title">Title</Label>
+                  <Input
+                    id="project-title"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="My project"
+                    maxLength={80}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-tags">Tags</Label>
+                  <Input
+                    id="project-tags"
+                    value={tagsInput}
+                    onChange={(event) => setTagsInput(event.target.value)}
+                    placeholder="design, AI"
+                  />
                   <p className="text-xs text-muted-foreground">
-                    {imageFiles.length} image(s) will be uploaded when you save.
+                    Comma-separated list of tags.
                   </p>
-                )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-short-description">
+                    Short description
+                  </Label>
+                  <Textarea
+                    id="project-short-description"
+                    value={shortDescription}
+                    onChange={(event) =>
+                      setShortDescription(event.target.value)
+                    }
+                    placeholder="A short summary of what it does."
+                    maxLength={240}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-url">URL</Label>
+                  <Input
+                    id="project-url"
+                    type="url"
+                    value={projectUrl}
+                    onChange={(event) => setProjectUrl(event.target.value)}
+                    placeholder="https://example.com/my-project"
+                  />
+                </div>
               </CardContent>
             </Card>
-          )}
 
-          {isAdmin && (
+            {isAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Images</CardTitle>
+                  <CardDescription>
+                    Upload images for the project gallery. Changes are applied
+                    when you save the project.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {images.map((image) => (
+                        <div
+                          key={image}
+                          className="group relative aspect-video overflow-hidden rounded-md border bg-muted"
+                        >
+                          <Image
+                            src={image}
+                            alt="Project gallery image"
+                            fill
+                            unoptimized
+                            sizes="(min-width: 640px) 33vw, 50vw"
+                            className="object-cover"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Remove image"
+                            onClick={() =>
+                              setImages((current) =>
+                                current.filter((item) => item !== image)
+                              )
+                            }
+                            className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-md border bg-background/90 opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Label htmlFor="project-image-files">Upload images</Label>
+                  <Input
+                    id="project-image-files"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) =>
+                      setImageFiles(Array.from(event.target.files ?? []))
+                    }
+                  />
+                  {imageFiles.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {imageFiles.length} image(s) will be uploaded when you
+                      save.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
@@ -474,172 +507,177 @@ function EditProjectForm() {
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Socials</CardTitle>
-              <CardDescription>
-                Optional links to your project&rsquo;s social profiles.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-5">
-              <div className="grid gap-2">
-                <Label htmlFor="project-twitter">Twitter</Label>
-                <Input
-                  id="project-twitter"
-                  type="url"
-                  value={twitterUrl}
-                  onChange={(event) => setTwitterUrl(event.target.value)}
-                  placeholder="https://x.com/username"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-youtube">YouTube</Label>
-                <Input
-                  id="project-youtube"
-                  type="url"
-                  value={youtubeUrl}
-                  onChange={(event) => setYoutubeUrl(event.target.value)}
-                  placeholder="https://youtube.com/@channel"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-github">GitHub</Label>
-                <Input
-                  id="project-github"
-                  type="url"
-                  value={githubUrl}
-                  onChange={(event) => setGithubUrl(event.target.value)}
-                  placeholder="https://github.com/user/repo"
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Socials</CardTitle>
+                <CardDescription>
+                  Optional links to your project&rsquo;s social profiles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-5">
+                <div className="grid gap-2">
+                  <Label htmlFor="project-twitter">Twitter</Label>
+                  <Input
+                    id="project-twitter"
+                    type="url"
+                    value={twitterUrl}
+                    onChange={(event) => setTwitterUrl(event.target.value)}
+                    placeholder="https://x.com/username"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-youtube">YouTube</Label>
+                  <Input
+                    id="project-youtube"
+                    type="url"
+                    value={youtubeUrl}
+                    onChange={(event) => setYoutubeUrl(event.target.value)}
+                    placeholder="https://youtube.com/@channel"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-github">GitHub</Label>
+                  <Input
+                    id="project-github"
+                    type="url"
+                    value={githubUrl}
+                    onChange={(event) => setGithubUrl(event.target.value)}
+                    placeholder="https://github.com/user/repo"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="font-semibold">Embeds</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Create as many variations as you need.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              onClick={() =>
-                setEmbeds((current) => [...current, defaultEmbed(Date.now())])
-              }
-            >
-              <Plus className="size-4" />
-              Add embed
-            </Button>
-          </div>
-          {embeds.map((embed, index) => {
-            const colors = {
-              background: "#ffffff",
-              border: "#d4d4d4",
-              text: "#171717",
-              muted: "#737373",
-            }
-            return (
-              <Card key={embed.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">Embed {index + 1}</CardTitle>
-                  {embeds.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      aria-label={`Remove embed ${index + 1}`}
-                      onClick={() =>
-                        setEmbeds((current) =>
-                          current.filter((item) => item.id !== embed.id)
-                        )
-                      }
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent className="grid gap-5">
-                  <div className="grid gap-2">
-                    <Label htmlFor={`embed-title-${embed.id}`}>Title</Label>
-                    <Input
-                      id={`embed-title-${embed.id}`}
-                      value={embed.title}
-                      onChange={(event) =>
-                        updateEmbed(embed.id, { title: event.target.value })
-                      }
-                      maxLength={80}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor={`embed-description-${embed.id}`}>
-                      Description
-                    </Label>
-                    <Textarea
-                      id={`embed-description-${embed.id}`}
-                      value={embed.description}
-                      onChange={(event) =>
-                        updateEmbed(embed.id, {
-                          description: event.target.value,
-                        })
-                      }
-                      maxLength={160}
-                    />
-                  </div>
-                </CardContent>
-                <CardContent className="border-t pt-6">
-                  <div className="flex min-h-32 items-center justify-center rounded-md border border-dashed bg-muted/40 p-5">
-                    <div
-                      className="w-full max-w-xs rounded border p-4"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.border,
-                        color: colors.text,
-                      }}
-                    >
-                      <p className="text-sm leading-5 font-semibold">
-                        {embed.title || title || "Untitled embed"}
-                      </p>
-                      {embed.description && (
-                        <p
-                          className="mt-1 text-xs leading-[18px]"
-                          style={{ color: colors.muted }}
-                        >
-                          {embed.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Save project</CardTitle>
-              <CardDescription>
-                Changes are applied immediately.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              {saveError && (
-                <p className="text-sm text-destructive" role="alert">
-                  {saveError}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Embeds</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Create as many variations as you need.
                 </p>
-              )}
-              <Button onClick={() => void saveProject()} disabled={saving}>
-                {saving && <Loader2 className="size-4 animate-spin" />}
-                {saving ? "Saving" : "Save changes"}
+              </div>
+              <Button
+                size="sm"
+                onClick={() =>
+                  setEmbeds((current) => [...current, defaultEmbed(Date.now())])
+                }
+              >
+                <Plus className="size-4" />
+                Add embed
               </Button>
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+            </div>
+            {embeds.map((embed, index) => {
+              const colors = {
+                background: "#ffffff",
+                border: "#d4d4d4",
+                text: "#171717",
+                muted: "#737373",
+              }
+              return (
+                <Card key={embed.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Embed {index + 1}</CardTitle>
+                    {embeds.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        aria-label={`Remove embed ${index + 1}`}
+                        onClick={() =>
+                          setEmbeds((current) =>
+                            current.filter((item) => item.id !== embed.id)
+                          )
+                        }
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent className="grid gap-5">
+                    <div className="grid gap-2">
+                      <Label htmlFor={`embed-title-${embed.id}`}>Title</Label>
+                      <Input
+                        id={`embed-title-${embed.id}`}
+                        value={embed.title}
+                        onChange={(event) =>
+                          updateEmbed(embed.id, { title: event.target.value })
+                        }
+                        maxLength={80}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor={`embed-description-${embed.id}`}>
+                        Description
+                      </Label>
+                      <Textarea
+                        id={`embed-description-${embed.id}`}
+                        value={embed.description}
+                        onChange={(event) =>
+                          updateEmbed(embed.id, {
+                            description: event.target.value,
+                          })
+                        }
+                        maxLength={160}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardContent className="border-t pt-6">
+                    <div className="flex min-h-32 items-center justify-center rounded-md border border-dashed bg-muted/40 p-5">
+                      <div
+                        className="w-full max-w-xs rounded border p-4"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                          color: colors.text,
+                        }}
+                      >
+                        <p className="text-sm leading-5 font-semibold">
+                          {embed.title || title || "Untitled embed"}
+                        </p>
+                        {embed.description && (
+                          <p
+                            className="mt-1 text-xs leading-[18px]"
+                            style={{ color: colors.muted }}
+                          >
+                            {embed.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Save project</CardTitle>
+                <CardDescription>
+                  {status === "published" && !isAdmin
+                    ? "Changes will be sent for moderation before they are published."
+                    : "Changes are applied immediately."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {saveError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {saveError}
+                  </p>
+                )}
+                <Button
+                  onClick={() => void saveProject()}
+                  disabled={saving || editingLocked}
+                >
+                  {saving && <Loader2 className="size-4 animate-spin" />}
+                  {saving ? "Saving" : "Save changes"}
+                </Button>
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
+      </fieldset>
     </main>
   )
 }

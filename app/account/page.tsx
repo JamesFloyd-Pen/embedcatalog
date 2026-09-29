@@ -12,6 +12,7 @@ import {
   Plus,
   Settings,
   ShieldCheck,
+  Trash2,
 } from "lucide-react"
 
 import { Button } from "components/ui/button"
@@ -54,6 +55,12 @@ function AccountPage({
   const [projects, setProjects] = React.useState<OwnedProject[]>([])
   const [projectsLoading, setProjectsLoading] = React.useState(false)
   const [projectsError, setProjectsError] = React.useState<string | null>(null)
+  const [pendingEditProjectIds, setPendingEditProjectIds] = React.useState<
+    Set<string>
+  >(() => new Set())
+  const [deletingProjectId, setDeletingProjectId] = React.useState<
+    string | null
+  >(null)
   const [bookmarkedProjects, setBookmarkedProjects] = React.useState<
     CatalogProject[]
   >([])
@@ -74,26 +81,51 @@ function AccountPage({
     }
 
     let cancelled = false
+    const userId = user.id
 
-    supabase
-      .from("projects")
-      .select(
-        "id, name, description, url, status, is_premium, impressions_count, created_at"
-      )
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) {
-          return
-        }
-        if (error) {
-          setProjectsError(error.message)
-          setProjects([])
-        } else {
-          setProjects(data)
-        }
+    async function loadProjects() {
+      const { data, error } = await supabase
+        .from("projects")
+        .select(
+          "id, name, description, url, status, is_premium, impressions_count, created_at"
+        )
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false })
+
+      if (cancelled) return
+      if (error) {
+        setProjectsError(error.message)
+        setProjects([])
+        setPendingEditProjectIds(new Set())
         setProjectsLoading(false)
-      })
+        return
+      }
+
+      setProjects(data)
+      const publishedProjectIds = data
+        .filter((project) => project.status === "published")
+        .map((project) => project.id)
+
+      if (publishedProjectIds.length === 0) {
+        setPendingEditProjectIds(new Set())
+        setProjectsLoading(false)
+        return
+      }
+
+      const { data: pendingRequests } = await supabase
+        .from("project_edit_requests")
+        .select("project_id")
+        .in("project_id", publishedProjectIds)
+        .eq("status", "pending")
+
+      if (cancelled) return
+      setPendingEditProjectIds(
+        new Set((pendingRequests ?? []).map((request) => request.project_id))
+      )
+      setProjectsLoading(false)
+    }
+
+    void loadProjects()
 
     return () => {
       cancelled = true
@@ -188,6 +220,41 @@ function AccountPage({
     setBookmarksLoading(true)
     setBookmarksError(null)
     setActiveSection("bookmarks")
+  }
+
+  async function deleteProject(project: OwnedProject) {
+    if (project.status !== "draft" || !user) return
+    if (!window.confirm("Delete this draft project? This cannot be undone.")) {
+      return
+    }
+
+    setDeletingProjectId(project.id)
+    setProjectsError(null)
+
+    const { error: embedsError } = await supabase
+      .from("project_embeds")
+      .delete()
+      .eq("project_id", project.id)
+
+    if (embedsError) {
+      setProjectsError(embedsError.message)
+      setDeletingProjectId(null)
+      return
+    }
+
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", project.id)
+      .eq("owner_id", user.id)
+      .eq("status", "draft")
+
+    if (error) {
+      setProjectsError(error.message)
+    } else {
+      setProjects((current) => current.filter((item) => item.id !== project.id))
+    }
+    setDeletingProjectId(null)
   }
 
   if (loading || !user) {
@@ -335,34 +402,58 @@ function AccountPage({
                 ) : (
                   <div className="divide-y rounded-md border">
                     {projects.map((project) => (
-                      <Link
+                      <div
                         key={project.id}
-                        href={`/account/edit-project?id=${project.id}`}
-                        className="block p-4 transition-colors hover:bg-accent"
+                        className="flex items-center gap-4 p-4 transition-colors hover:bg-accent"
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="truncate font-medium">
-                              {project.name}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                              {project.description}
-                            </p>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {project.impressions_count.toLocaleString()}{" "}
-                              impressions
-                            </p>
+                        <Link
+                          href={`/account/edit-project?id=${project.id}`}
+                          className="min-w-0 flex-1"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">
+                                {project.name}
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                {project.description}
+                              </p>
+                              {project.status === "published" &&
+                                pendingEditProjectIds.has(project.id) && (
+                                  <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                                    Changes pending review
+                                  </p>
+                                )}
+                            </div>
+                            <span className="flex shrink-0 items-center gap-2">
+                              <span className="rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground capitalize">
+                                {project.is_premium ? "Premium" : "Free"}
+                              </span>
+                              <span className="rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground capitalize">
+                                {project.status}
+                              </span>
+                            </span>
                           </div>
-                          <span className="flex shrink-0 items-center gap-2">
-                            <span className="rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground capitalize">
-                              {project.is_premium ? "Premium" : "Free"}
-                            </span>
-                            <span className="rounded-md border px-2 py-0.5 text-xs font-medium text-muted-foreground capitalize">
-                              {project.status}
-                            </span>
-                          </span>
-                        </div>
-                      </Link>
+                        </Link>
+                        {project.status === "draft" && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete ${project.name}`}
+                            title="Delete draft project"
+                            disabled={deletingProjectId === project.id}
+                            onClick={() => void deleteProject(project)}
+                            className="shrink-0 text-destructive hover:text-destructive"
+                          >
+                            {deletingProjectId === project.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

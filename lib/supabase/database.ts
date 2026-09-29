@@ -43,6 +43,47 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      project_edit_requests: {
+        Row: {
+          id: string
+          project_id: string
+          owner_id: string
+          name: string
+          description: string
+          url: string
+          github_url: string | null
+          tags: string[] | null
+          socials: Record<string, string> | null
+          images: string[] | null
+          info: string | null
+          embeds: unknown
+          status: "pending" | "approved" | "rejected"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          owner_id: string
+          name: string
+          description: string
+          url: string
+          github_url?: string | null
+          tags?: string[] | null
+          socials?: Record<string, string> | null
+          images?: string[] | null
+          info?: string | null
+          embeds: unknown
+          status?: "pending" | "approved" | "rejected"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          status?: "pending" | "approved" | "rejected"
+          updated_at?: string
+        }
+        Relationships: []
+      }
       project_upvotes: {
         Row: {
           project_id: string
@@ -152,6 +193,10 @@ export type Database = {
     }
     Views: Record<string, never>
     Functions: {
+      approve_project_edit_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
       record_project_impressions: {
         Args: { project_ids: string[] }
         Returns: undefined

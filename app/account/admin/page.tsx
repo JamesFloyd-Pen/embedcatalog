@@ -35,6 +35,15 @@ type Project = {
   is_premium: boolean
   created_at: string
 }
+type ProjectEditRequest = {
+  id: string
+  project_id: string
+  name: string
+  description: string
+  url: string
+  tags: string[] | null
+  created_at: string
+}
 
 function AdminPage() {
   const router = useRouter()
@@ -43,6 +52,9 @@ function AdminPage() {
   const [projectsLoading, setProjectsLoading] = React.useState(true)
   const [projectsError, setProjectsError] = React.useState<string | null>(null)
   const [actioningId, setActioningId] = React.useState<string | null>(null)
+  const [pendingEdits, setPendingEdits] = React.useState<ProjectEditRequest[]>(
+    []
+  )
 
   React.useEffect(() => {
     if (!loading && (!user || !isAdmin)) router.replace("/account")
@@ -67,6 +79,29 @@ function AdminPage() {
           setProjects(data)
         }
         setProjectsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, isAdmin])
+
+  React.useEffect(() => {
+    if (!user || !isAdmin) return
+
+    let cancelled = false
+    supabase
+      .from("project_edit_requests")
+      .select("id, project_id, name, description, url, tags, created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          setProjectsError(error.message)
+        } else {
+          setPendingEdits(data)
+        }
       })
 
     return () => {
@@ -131,6 +166,42 @@ function AdminPage() {
       current.map((project) =>
         project.id === id ? { ...project, is_premium: isPremium } : project
       )
+    )
+  }
+
+  async function approveEdit(requestId: string) {
+    setActioningId(requestId)
+    const { error } = await supabase.rpc("approve_project_edit_request", {
+      request_id: requestId,
+    })
+    setActioningId(null)
+
+    if (error) {
+      setProjectsError(error.message)
+      return
+    }
+
+    setPendingEdits((current) =>
+      current.filter((request) => request.id !== requestId)
+    )
+  }
+
+  async function rejectEdit(requestId: string) {
+    setActioningId(requestId)
+    const { error } = await supabase
+      .from("project_edit_requests")
+      .delete()
+      .eq("id", requestId)
+      .eq("status", "pending")
+    setActioningId(null)
+
+    if (error) {
+      setProjectsError(error.message)
+      return
+    }
+
+    setPendingEdits((current) =>
+      current.filter((request) => request.id !== requestId)
     )
   }
 
@@ -255,6 +326,76 @@ function AdminPage() {
                           disabled={actioningId === project.id}
                         >
                           <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                Pending changes ({pendingEdits.length})
+              </CardTitle>
+              <CardDescription>
+                New versions of published projects waiting for approval.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {pendingEdits.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No pending changes.
+                </p>
+              ) : (
+                pendingEdits.map((request) => (
+                  <div key={request.id} className="rounded-lg border p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/account/preview-changes-project?id=${request.id}`}
+                          className="cursor-pointer font-medium hover:underline"
+                          title="Preview pending changes"
+                        >
+                          {request.name}
+                        </Link>
+                        <a
+                          href={request.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="text-xs text-muted-foreground underline underline-offset-4"
+                        >
+                          {request.url}
+                        </a>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {request.description}
+                        </p>
+                        {request.tags && request.tags.length > 0 && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Tags: {request.tags.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => void approveEdit(request.id)}
+                          disabled={actioningId === request.id}
+                        >
+                          <Check className="size-4" />
+                          Approve changes
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => void rejectEdit(request.id)}
+                          disabled={actioningId === request.id}
+                        >
+                          <X className="size-4" />
+                          Reject
                         </Button>
                       </div>
                     </div>

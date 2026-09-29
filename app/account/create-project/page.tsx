@@ -6,6 +6,7 @@ import { ChevronLeft, Loader2, Plus, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { useAuth } from "components/auth-provider"
+import { useNotification } from "components/notification-provider"
 import { Button } from "components/ui/button"
 import {
   Card,
@@ -105,7 +106,8 @@ function ThemeSwitch({
 
 function CreateProjectPage() {
   const router = useRouter()
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading } = useAuth()
+  const { notify } = useNotification()
   const [title, setTitle] = React.useState("")
   const [projectUrl, setProjectUrl] = React.useState("https://example.com")
   const [shortDescription, setShortDescription] = React.useState("")
@@ -184,7 +186,7 @@ function CreateProjectPage() {
         github_url: socials.github ?? null,
         tags: tags.length ? tags : null,
         socials: Object.keys(socials).length ? socials : null,
-        info: isAdmin && infoInput.trim() ? infoInput.trim() : null,
+        info: infoInput.trim() || null,
       })
       .select("id")
       .single()
@@ -221,16 +223,17 @@ function CreateProjectPage() {
     }
 
     setSaving(false)
-    router.push("/account")
+    notify("Project created successfully.")
+    router.push("/account/projects")
   }
 
   return (
     <main className="site-container py-8 sm:py-12">
       <div className="mb-8">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/account">
+          <Link href="/account/projects">
             <ChevronLeft className="size-4" />
-            Account
+            My projects
           </Link>
         </Button>
         <h1 className="mt-4 text-2xl font-semibold">Create project</h1>
@@ -296,46 +299,42 @@ function CreateProjectPage() {
             </CardContent>
           </Card>
 
-          {isAdmin && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  Project info (Markdown)
-                </CardTitle>
-                <CardDescription>
-                  Write Markdown. Tables, task lists, code blocks, links, and
-                  images are supported.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-5">
-                <div className="grid gap-2">
-                  <Label htmlFor="project-info-markdown">Markdown</Label>
-                  <Textarea
-                    id="project-info-markdown"
-                    aria-label="Project info Markdown"
-                    value={infoInput}
-                    onChange={(event) => setInfoInput(event.target.value)}
-                    placeholder={
-                      "## Example\n\nDescribe your project with **Markdown**."
-                    }
-                    className="min-h-80 resize-y font-mono text-sm leading-relaxed"
-                  />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Project info (Markdown)</CardTitle>
+              <CardDescription>
+                Write Markdown. Tables, task lists, code blocks, links, and
+                images are supported.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <div className="grid gap-2">
+                <Label htmlFor="project-info-markdown">Markdown</Label>
+                <Textarea
+                  id="project-info-markdown"
+                  aria-label="Project info Markdown"
+                  value={infoInput}
+                  onChange={(event) => setInfoInput(event.target.value)}
+                  placeholder={
+                    "## Example\n\nDescribe your project with **Markdown**."
+                  }
+                  className="min-h-80 resize-y font-mono text-sm leading-relaxed"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="mb-2 text-sm font-medium">Preview</p>
+                <div className="min-h-80 overflow-x-auto rounded-md border p-4">
+                  {infoInput.trim() ? (
+                    <ProjectInfoMarkdown content={infoInput} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Markdown preview will appear here.
+                    </p>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <p className="mb-2 text-sm font-medium">Preview</p>
-                  <div className="min-h-80 overflow-x-auto rounded-md border p-4">
-                    {infoInput.trim() ? (
-                      <ProjectInfoMarkdown content={infoInput} />
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Markdown preview will appear here.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

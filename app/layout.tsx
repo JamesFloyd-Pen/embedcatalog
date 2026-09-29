@@ -7,6 +7,7 @@ import { AuthProvider } from "components/auth-provider"
 import { Header } from "components/header"
 import { Footer } from "components/footer"
 import { GithubStars } from "components/github-stars"
+import { NotificationProvider } from "components/notification-provider"
 import { siteConfig } from "lib/site"
 
 const SITE_NAME = siteConfig.name
@@ -83,11 +84,13 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
-            <div className="flex min-h-svh flex-col">
-              <Header githubSlot={<GithubStars />} />
-              <div className="flex-1">{children}</div>
-              <Footer />
-            </div>
+            <NotificationProvider>
+              <div className="flex min-h-svh flex-col">
+                <Header githubSlot={<GithubStars />} />
+                <div className="flex-1">{children}</div>
+                <Footer />
+              </div>
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
