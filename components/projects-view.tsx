@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "components/ui/select"
+import { Embed } from "components/ui/embed"
 import { ProjectsGrid, type Project } from "components/projects-grid"
 
 type SortOption = "desc" | "asc" | "upvotes" | "impressions"
@@ -41,6 +42,7 @@ function ProjectsView({
   const [selectedTags, setSelectedTags] = React.useState<string[]>(() =>
     parseTagsParam(searchParams.get("tags"))
   )
+  const [tagSearch, setTagSearch] = React.useState("")
   const [sort, setSort] = React.useState<SortOption>(() => {
     const value = searchParams.get("sort")
     return value === "asc" || value === "upvotes" || value === "impressions"
@@ -72,6 +74,12 @@ function ProjectsView({
     }
     return Array.from(tags).sort()
   }, [projects])
+
+  const visibleTags = React.useMemo(() => {
+    const normalizedSearch = tagSearch.trim().toLowerCase()
+    if (!normalizedSearch) return allTags
+    return allTags.filter((tag) => tag.toLowerCase().includes(normalizedSearch))
+  }, [allTags, tagSearch])
 
   const normalizedQuery = query.trim().toLowerCase()
 
@@ -169,8 +177,32 @@ function ProjectsView({
             <h3 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Tags
             </h3>
+            <Input
+              value={tagSearch}
+              onChange={(event) => setTagSearch(event.target.value)}
+              placeholder="Search tags..."
+              aria-label="Search tags"
+              className="mb-3 h-8 text-sm"
+            />
+            {selectedTags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {selectedTags.map((tag) => (
+                  <Embed key={tag} variant="secondary" asChild>
+                    <button
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      aria-label={`Remove ${tag} tag filter`}
+                      className="cursor-pointer"
+                    >
+                      <X />
+                      {tag}
+                    </button>
+                  </Embed>
+                ))}
+              </div>
+            )}
             <div className="flex max-h-48 flex-col gap-2 overflow-y-auto pr-1">
-              {allTags.map((tag) => (
+              {visibleTags.map((tag) => (
                 <label
                   key={tag}
                   className="flex cursor-pointer items-center gap-2 text-sm"
@@ -184,6 +216,9 @@ function ProjectsView({
                   <span>{tag}</span>
                 </label>
               ))}
+              {visibleTags.length === 0 && (
+                <p className="text-sm text-muted-foreground">No tags found.</p>
+              )}
             </div>
           </div>
         </aside>

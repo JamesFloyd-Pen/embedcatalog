@@ -10,6 +10,7 @@ import { CopyLinkButton } from "components/copy-link-button"
 import { ImageCarousel } from "components/image-carousel"
 import { ProjectInfoMarkdown } from "components/project-info-markdown"
 import { ProjectEmbeds } from "components/project-embeds"
+import { ProjectBookmark } from "components/project-bookmark"
 import { ProjectGithubStats } from "components/project-github-stats"
 import { ProjectImpressionTracker } from "components/project-impression-tracker"
 import { ProjectUpvote } from "components/project-upvote"
@@ -184,6 +185,8 @@ export default async function ProjectPage({
             )}
 
             <CopyLinkButton path={`/projects/${project.slug}`} />
+
+            <ProjectBookmark projectId={project.id} />
 
             <ProjectUpvote
               projectId={project.id}

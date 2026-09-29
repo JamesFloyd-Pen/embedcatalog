@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Check, Copy, Lock } from "lucide-react"
 
 import {
@@ -65,7 +66,7 @@ function ThemeSwitch({
         aria-label="Toggle embed theme"
         onClick={() => onThemeChange(isDark ? "light" : "dark")}
         className={cn(
-          "relative h-5 w-9 shrink-0 rounded-full border transition-colors",
+          "relative h-5 w-9 shrink-0 cursor-pointer rounded-full border transition-colors",
           isDark ? "border-foreground bg-foreground" : "border-border bg-muted"
         )}
       >
@@ -103,14 +104,14 @@ function EmbedHtmlLine({ code }: { code: string }) {
 
   return (
     <div className="flex items-center gap-1.5 rounded-md border bg-muted px-2 py-1.5">
-      <code className="min-w-0 flex-1 truncate text-[10px] leading-none text-muted-foreground">
+      <code className="block min-w-0 flex-1 overflow-x-auto text-[10px] leading-none whitespace-nowrap text-muted-foreground">
         {code}
       </code>
       <button
         type="button"
         onClick={handleCopy}
         aria-label={copied ? "Copied" : "Copy HTML"}
-        className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+        className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
       >
         {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
       </button>
@@ -134,16 +135,20 @@ function buildEmbedImageHtml({
   return `<a href="${projectUrl}" target="_blank" rel="noreferrer noopener"><img src="${embedSrc}" alt="${title}" style="width: ${width}px; height: ${height}px;" width="${width}" height="${height}" /></a>`
 }
 
-function CustomEmbedCard({
+export function CustomEmbedCard({
   slug,
   shortId,
   projectUrl,
   title,
+  projectName,
+  projectHref,
 }: {
   slug: string
   shortId: string
   projectUrl: string
   title: string
+  projectName?: string
+  projectHref?: string
 }) {
   const [theme, setTheme] = React.useState<EmbedTheme>("light")
   const { width, height } = getCustomEmbedSize()
@@ -160,6 +165,14 @@ function CustomEmbedCard({
     <Card className="gap-4 py-4 shadow-none">
       <CardHeader className="border-b px-4 pb-4">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {projectName && projectHref ? (
+          <Link
+            href={projectHref}
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            {projectName}
+          </Link>
+        ) : null}
         <CardAction>
           <ThemeSwitch theme={theme} onThemeChange={setTheme} />
         </CardAction>
@@ -329,7 +342,7 @@ function ProjectEmbeds({
             type="button"
             onClick={() => setTab(item.id)}
             className={cn(
-              "rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
+              "cursor-pointer rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
               tab === item.id
                 ? "bg-secondary text-secondary-foreground"
                 : "text-muted-foreground hover:text-foreground"

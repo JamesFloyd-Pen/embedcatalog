@@ -5,7 +5,7 @@ import { ProjectsPage } from "components/projects-page"
 import { siteConfig } from "lib/site"
 
 export const metadata: Metadata = {
-  title: "Projects",
+  title: { absolute: `Projects | ${siteConfig.name}` },
   description:
     "Explore all projects. Filter by status and tags, and search by name or description.",
   keywords: [

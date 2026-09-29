@@ -15,7 +15,7 @@ const SITE_DESCRIPTION = siteConfig.slogan
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: SITE_NAME,
+    default: `Projects | ${SITE_NAME}`,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: `Projects | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
     url: "/",
     images: [
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: `Projects | ${SITE_NAME}`,
     description: SITE_DESCRIPTION,
     creator: "@aanthonymax",
     images: ["/images/preview.png"],

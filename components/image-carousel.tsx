@@ -6,13 +6,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react"
 
 import { cn } from "lib/utils"
 
-function ImageCarousel({
-  images,
-  alt,
-}: {
-  images: string[]
-  alt: string
-}) {
+function ImageCarousel({ images, alt }: { images: string[]; alt: string }) {
   const [index, setIndex] = React.useState(0)
   const [modalOpen, setModalOpen] = React.useState(false)
 
@@ -45,12 +39,12 @@ function ImageCarousel({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-muted relative aspect-video w-full overflow-hidden rounded-xl border">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl border bg-muted">
         <button
           type="button"
           aria-label="View image full screen"
           onClick={() => setModalOpen(true)}
-          className="absolute inset-0 z-10 cursor-zoom-in"
+          className="absolute inset-0 z-10 cursor-pointer cursor-zoom-in"
         />
         <Image
           key={images[index]}
@@ -68,7 +62,7 @@ function ImageCarousel({
               type="button"
               aria-label="Previous image"
               onClick={() => goTo(index - 1)}
-              className="bg-background/70 hover:bg-background absolute top-1/2 left-2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full border backdrop-blur transition-colors"
+              className="absolute top-1/2 left-2 z-20 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border bg-background/70 backdrop-blur transition-colors hover:bg-background"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -76,12 +70,12 @@ function ImageCarousel({
               type="button"
               aria-label="Next image"
               onClick={() => goTo(index + 1)}
-              className="bg-background/70 hover:bg-background absolute top-1/2 right-2 z-20 flex size-9 -translate-y-1/2 items-center justify-center rounded-full border backdrop-blur transition-colors"
+              className="absolute top-1/2 right-2 z-20 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border bg-background/70 backdrop-blur transition-colors hover:bg-background"
             >
               <ChevronRight className="size-4" />
             </button>
 
-            <div className="bg-background/70 text-foreground absolute right-2 bottom-2 z-20 rounded-md border px-2 py-0.5 text-xs backdrop-blur">
+            <div className="absolute right-2 bottom-2 z-20 rounded-md border bg-background/70 px-2 py-0.5 text-xs text-foreground backdrop-blur">
               {index + 1} / {count}
             </div>
           </>
@@ -98,9 +92,9 @@ function ImageCarousel({
               aria-current={i === index}
               onClick={() => setIndex(i)}
               className={cn(
-                "bg-muted relative aspect-video w-20 shrink-0 overflow-hidden rounded-md border transition-opacity",
+                "relative aspect-video w-20 shrink-0 cursor-pointer overflow-hidden rounded-md border bg-muted transition-opacity",
                 i === index
-                  ? "ring-ring ring-2 ring-offset-2"
+                  ? "ring-2 ring-ring ring-offset-2"
                   : "opacity-60 hover:opacity-100"
               )}
             >
@@ -129,7 +123,7 @@ function ImageCarousel({
             type="button"
             aria-label="Close"
             onClick={() => setModalOpen(false)}
-            className="absolute top-4 right-4 flex size-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
+            className="absolute top-4 right-4 flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20"
           >
             <X className="size-5" />
           </button>
@@ -155,7 +149,7 @@ function ImageCarousel({
                   type="button"
                   aria-label="Previous image"
                   onClick={() => goTo(index - 1)}
-                  className="absolute top-1/2 left-2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:-left-16"
+                  className="absolute top-1/2 left-2 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:-left-16"
                 >
                   <ChevronLeft className="size-5" />
                 </button>
@@ -163,7 +157,7 @@ function ImageCarousel({
                   type="button"
                   aria-label="Next image"
                   onClick={() => goTo(index + 1)}
-                  className="absolute top-1/2 right-2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:-right-16"
+                  className="absolute top-1/2 right-2 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 sm:-right-16"
                 >
                   <ChevronRight className="size-5" />
                 </button>

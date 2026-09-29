@@ -239,7 +239,7 @@ function ProjectsGrid({
                       (bookmarksAreLoading || pendingIds.has(project.id)))
                   }
                   onClick={() => void toggleBookmark(project.id)}
-                  className="flex size-8 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
                 >
                   {pendingIds.has(project.id) ||
                   (user && bookmarksAreLoading) ? (
