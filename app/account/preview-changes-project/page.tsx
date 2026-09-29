@@ -40,7 +40,7 @@ type PendingProject = {
   created_at: string
 }
 
-function PreviewChangesProjectPage() {
+function PreviewChangesProjectContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestId = searchParams.get("id")
@@ -235,6 +235,20 @@ function PreviewChangesProjectPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+function PreviewChangesProjectPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex min-h-[70svh] items-center justify-center">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <PreviewChangesProjectContent />
+    </React.Suspense>
   )
 }
 
