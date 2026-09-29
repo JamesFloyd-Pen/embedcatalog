@@ -60,10 +60,23 @@ function ProjectsView({
     if (sort !== "desc") params.set("sort", sort)
 
     const queryString = params.toString()
+    if (queryString === searchParams.toString()) {
+      return
+    }
+
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
       scroll: false,
     })
-  }, [query, newOnly, premiumOnly, selectedTags, sort, pathname, router])
+  }, [
+    query,
+    newOnly,
+    premiumOnly,
+    selectedTags,
+    sort,
+    pathname,
+    router,
+    searchParams,
+  ])
 
   const allTags = React.useMemo(() => {
     const tags = new Set<string>()
