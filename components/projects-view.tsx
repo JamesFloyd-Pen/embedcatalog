@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Search, X } from "lucide-react"
 
 import { Input } from "components/ui/input"
@@ -28,7 +28,6 @@ function ProjectsView({
   projects: Project[]
   showFilters?: boolean
 }) {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -50,7 +49,7 @@ function ProjectsView({
       : "desc"
   })
 
-  // keep the URL in sync so filters are shareable/bookmarkable
+  // Keep the URL shareable without triggering a Next.js navigation.
   React.useEffect(() => {
     const params = new URLSearchParams()
     if (query) params.set("q", query)
@@ -60,23 +59,16 @@ function ProjectsView({
     if (sort !== "desc") params.set("sort", sort)
 
     const queryString = params.toString()
-    if (queryString === searchParams.toString()) {
+    if (queryString === window.location.search.slice(1)) {
       return
     }
 
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
-      scroll: false,
-    })
-  }, [
-    query,
-    newOnly,
-    premiumOnly,
-    selectedTags,
-    sort,
-    pathname,
-    router,
-    searchParams,
-  ])
+    window.history.replaceState(
+      null,
+      "",
+      queryString ? `${pathname}?${queryString}` : pathname
+    )
+  }, [query, newOnly, premiumOnly, selectedTags, sort, pathname])
 
   const allTags = React.useMemo(() => {
     const tags = new Set<string>()
