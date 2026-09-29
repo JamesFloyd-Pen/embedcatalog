@@ -13,6 +13,7 @@ import { ProjectEmbeds } from "components/project-embeds"
 import { ProjectBookmark } from "components/project-bookmark"
 import { ProjectGithubStats } from "components/project-github-stats"
 import { ProjectImpressionTracker } from "components/project-impression-tracker"
+import { OtherProjects } from "components/other-projects"
 import { ProjectUpvote } from "components/project-upvote"
 import { getPublishedProjects } from "lib/supabase/projects"
 import { supabase } from "lib/supabase/client"
@@ -112,7 +113,7 @@ export default async function ProjectPage({
 
   return (
     <main className="site-container py-10">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-6xl">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -121,19 +122,47 @@ export default async function ProjectPage({
           Back to projects
         </Link>
 
-        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex flex-col gap-2">
-              {(project.premium || project.isNew) && (
-                <div className="mb-1 flex items-center gap-2">
-                  {project.premium && (
-                    <Embed variant="secondary">Premium</Embed>
+        <div className="mt-6 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="max-w-3xl min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="flex flex-col gap-2">
+                  {(project.premium || project.isNew) && (
+                    <div className="mb-1 flex items-center gap-2">
+                      {project.premium && (
+                        <Embed variant="secondary">Premium</Embed>
+                      )}
+                      {project.isNew && <Embed>New</Embed>}
+                    </div>
                   )}
-                  {project.isNew && <Embed>New</Embed>}
+                  <h1 className="text-2xl font-semibold">{project.name}</h1>
                 </div>
-              )}
-              <h1 className="text-2xl font-semibold">{project.name}</h1>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <CopyLinkButton path={`/projects/${project.slug}`} />
+
+                <ProjectBookmark projectId={project.id} />
+
+                <ProjectUpvote
+                  projectId={project.id}
+                  initialCount={project.upvotesCount}
+                />
+
+                <div className="flex flex-col items-end gap-2">
+                  <Button asChild>
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Visit
+                    </a>
+                  </Button>
+                </div>
+              </div>
             </div>
+
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
               <p className="text-sm text-muted-foreground">
                 Added {formatDate(project.createdAt)}
@@ -142,106 +171,92 @@ export default async function ProjectPage({
                 projectId={project.id}
                 initialCount={project.impressionsCount}
               />
+              {project.socials && (
+                <div className="ml-auto flex items-center gap-2">
+                  {project.socials.twitter && (
+                    <a
+                      href={project.socials.twitter}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label={`${project.name} on X`}
+                      title={`${project.name} on X`}
+                      className="flex cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <TwitterIcon className="size-4" />
+                    </a>
+                  )}
+                  {project.socials.youtube && (
+                    <a
+                      href={project.socials.youtube}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label={`${project.name} on YouTube`}
+                      title={`${project.name} on YouTube`}
+                      className="flex cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <YoutubeIcon className="size-4" />
+                    </a>
+                  )}
+                  {project.socials.github && (
+                    <a
+                      href={project.socials.github}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label={`${project.name} on GitHub`}
+                      title={`${project.name} on GitHub`}
+                      className="flex cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <GithubIcon className="size-4" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {project.socials && (
-              <div className="flex items-center gap-0.5">
-                {project.socials.twitter && (
-                  <a
-                    href={project.socials.twitter}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    aria-label={`${project.name} on X`}
-                    className="flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    <TwitterIcon className="size-4" />
-                  </a>
-                )}
-                {project.socials.youtube && (
-                  <a
-                    href={project.socials.youtube}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    aria-label={`${project.name} on YouTube`}
-                    className="flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    <YoutubeIcon className="size-4" />
-                  </a>
-                )}
-                {project.socials.github && (
-                  <a
-                    href={project.socials.github}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    aria-label={`${project.name} on GitHub`}
-                    className="flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    <GithubIcon className="size-4" />
-                  </a>
-                )}
-              </div>
+            {project.githubUrl && (
+              <ProjectGithubStats
+                key={project.id}
+                projectId={project.id}
+                githubUrl={project.githubUrl}
+                initialStats={project.githubStats}
+              />
             )}
 
-            <CopyLinkButton path={`/projects/${project.slug}`} />
+            <div className="mt-6">
+              <ImageCarousel images={project.images} alt={project.name} />
+            </div>
 
-            <ProjectBookmark projectId={project.id} />
-
-            <ProjectUpvote
-              projectId={project.id}
-              initialCount={project.upvotesCount}
+            <ProjectEmbeds
+              slug={project.slug}
+              projectName={project.name}
+              externalUrl={project.url}
+              isPremium={project.premium ?? false}
+              customEmbeds={(customEmbeds ?? []).map((embed) => ({
+                id: embed.id,
+                shortId: embed.short_id,
+                title: embed.title,
+                description: embed.description,
+              }))}
             />
 
-            <Button asChild>
-              <a href={project.url} target="_blank" rel="noreferrer noopener">
-                Visit
-              </a>
-            </Button>
+            <p className="mt-6 leading-relaxed">{project.description}</p>
+
+            <ProjectInfoMarkdown content={project.info} />
+
+            <div className="mt-6">
+              <h2 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Tags
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
+                {project.tags.map((tag) => (
+                  <Embed key={tag} variant="outline">
+                    {tag}
+                  </Embed>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-
-        {project.githubUrl && (
-          <ProjectGithubStats
-            key={project.id}
-            projectId={project.id}
-            githubUrl={project.githubUrl}
-            initialStats={project.githubStats}
-          />
-        )}
-
-        <div className="mt-6">
-          <ImageCarousel images={project.images} alt={project.name} />
-        </div>
-
-        <ProjectEmbeds
-          slug={project.slug}
-          projectName={project.name}
-          externalUrl={project.url}
-          isPremium={project.premium ?? false}
-          customEmbeds={(customEmbeds ?? []).map((embed) => ({
-            id: embed.id,
-            shortId: embed.short_id,
-            title: embed.title,
-            description: embed.description,
-          }))}
-        />
-
-        <p className="mt-6 leading-relaxed">{project.description}</p>
-
-        <ProjectInfoMarkdown content={project.info} />
-
-        <div className="mt-6">
-          <h2 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Tags
-          </h2>
-          <div className="flex flex-wrap gap-1.5">
-            {project.tags.map((tag) => (
-              <Embed key={tag} variant="outline">
-                {tag}
-              </Embed>
-            ))}
-          </div>
+          <OtherProjects projects={projects} currentProjectId={project.id} />
         </div>
       </div>
     </main>
