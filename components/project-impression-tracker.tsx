@@ -3,6 +3,8 @@
 import * as React from "react"
 import { Eye } from "lucide-react"
 
+import { supabase } from "lib/supabase/client"
+
 const QUEUE_KEY = "project-impression-queue"
 const BATCH_SIZE = 5
 const MAX_BATCH_SIZE = 100
@@ -41,6 +43,19 @@ function ProjectImpressionTracker({
   const [impressionsCount, setImpressionsCount] = React.useState(initialCount)
 
   React.useEffect(() => {
+    let cancelled = false
+
+    supabase
+      .from("projects")
+      .select("impressions_count")
+      .eq("id", projectId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setImpressionsCount(data.impressions_count)
+        }
+      })
+
     const hostname = window.location.hostname
     if (
       hostname === "localhost" ||
@@ -113,6 +128,7 @@ function ProjectImpressionTracker({
     window.addEventListener("pagehide", handlePageHide)
 
     return () => {
+      cancelled = true
       window.clearInterval(intervalId)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("pagehide", handlePageHide)

@@ -27,6 +27,24 @@ function ProjectUpvote({
   const requestInProgress = React.useRef(false)
 
   React.useEffect(() => {
+    let cancelled = false
+
+    supabase
+      .from("projects")
+      .select("upvotes_count")
+      .eq("id", projectId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        setCount(data.upvotes_count)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
+
+  React.useEffect(() => {
     if (!user) return
 
     let cancelled = false
