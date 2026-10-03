@@ -1,5 +1,7 @@
 <div align="center">
 
+[![EmbedCatalog](public/images/photo4.png)](https://embedcatalog.com/hacktoberfest-2026)
+
 [![EmbedCatalog](public/images/photo1.png)](https://embedcatalog.com)
 
   <h1>EmbedCatalog</h1>
