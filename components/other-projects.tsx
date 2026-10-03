@@ -1,6 +1,5 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowUp, Eye } from "lucide-react"
 
 import { type Project } from "components/projects-grid"
 import {
@@ -12,6 +11,7 @@ import {
   CardTitle,
 } from "components/ui/card"
 import { Embed } from "components/ui/embed"
+import { ProjectLiveStats } from "components/project-live-stats"
 import { formatDate } from "lib/utils"
 
 function OtherProjects({
@@ -81,16 +81,11 @@ function OtherProjects({
             </CardContent>
             <CardFooter className="justify-between px-4 py-3 text-xs text-muted-foreground">
               <span>{formatDate(project.createdAt)}</span>
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1">
-                  <Eye className="size-3.5" />
-                  {project.impressionsCount.toLocaleString("en-US")}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <ArrowUp className="size-3.5" />
-                  {project.upvotesCount.toLocaleString("en-US")}
-                </span>
-              </div>
+              <ProjectLiveStats
+                projectId={project.id}
+                initialImpressions={project.impressionsCount}
+                initialUpvotes={project.upvotesCount}
+              />
             </CardFooter>
           </Card>
         ))}

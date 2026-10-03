@@ -28,6 +28,7 @@ const navLinks = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Embeds", href: "/embeds" },
+  { label: "Hacktoberfest 2026", href: "/hacktoberfest-2026" },
 ]
 
 function ThemeToggle() {
