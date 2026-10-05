@@ -5,6 +5,8 @@ import { loadEnvConfig } from "@next/env"
 import { ImageResponse } from "next/og"
 import { createClient } from "@supabase/supabase-js"
 
+import { getContributors } from "../lib/hacktoberfest"
+
 loadEnvConfig(process.cwd())
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -214,7 +216,7 @@ async function generateEmbed(
 
 async function generateCustomEmbed(
   slug: string,
-  embed: CustomEmbedRow,
+  embed: Pick<CustomEmbedRow, "short_id" | "title" | "description">,
   theme: (typeof embedThemes)[number]
 ) {
   const colors = getCustomEmbedTheme(theme)
@@ -331,5 +333,23 @@ for (const embed of customEmbeds as CustomEmbedRow[]) {
   }
 }
 
+const contributors = await getContributors()
+for (const contributor of contributors) {
+  for (const theme of embedThemes) {
+    await generateCustomEmbed(
+      "hacktoberfest-2026",
+      {
+        short_id: contributor.login,
+        title: "Hacktoberfest 2026",
+        description: `Contributor: ${contributor.login}`,
+      },
+      theme
+    )
+  }
+}
+
 console.log(`Generated embed PNGs for ${projects.length} published projects.`)
 console.log(`Generated ${customEmbeds.length} custom embed PNGs.`)
+console.log(
+  `Generated Hacktoberfest embeds for ${contributors.length} contributors.`
+)

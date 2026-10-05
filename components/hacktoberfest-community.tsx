@@ -89,28 +89,47 @@ function HacktoberfestCommunity() {
 
       <section className="mt-10">
         <h2 className="text-lg font-semibold">Contributors</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Get your unique Hacktoberfest 2026 embed.
+        </p>
         {contributors.length > 0 ? (
           <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6">
             {contributors.map((contributor) => (
               <li key={contributor.login}>
-                <a
-                  href={contributor.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex flex-col items-center gap-2"
-                >
-                  <Image
-                    src={contributor.avatarUrl}
-                    alt={contributor.login}
-                    width={64}
-                    height={64}
-                    unoptimized
-                    className="size-16 rounded-full"
-                  />
-                  <span className="max-w-full truncate text-sm">
-                    {contributor.login}
-                  </span>
-                </a>
+                <div className="flex flex-col items-center gap-2">
+                  <a
+                    href={contributor.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <Image
+                      src={contributor.avatarUrl}
+                      alt={contributor.login}
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="size-16 rounded-full"
+                    />
+                    <span className="max-w-full truncate text-sm">
+                      {contributor.login}
+                    </span>
+                  </a>
+                  <a
+                    href={`/embed/hacktoberfest-2026/${contributor.login}.png`}
+                    download={`${contributor.login}-hacktoberfest-2026.png`}
+                    aria-label={`Download ${contributor.login}'s Hacktoberfest 2026 badge`}
+                  >
+                    <Image
+                      src={`/embed/hacktoberfest-2026/${contributor.login}.png`}
+                      alt={`Hacktoberfest 2026 contributor badge for ${contributor.login}`}
+                      width={320}
+                      height={84}
+                      unoptimized
+                      className="h-auto w-full max-w-64"
+                    />
+                  </a>
+                </div>
               </li>
             ))}
           </ul>
